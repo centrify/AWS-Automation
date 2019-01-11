@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# Copyright 2017 Centrify Corporation
+# Copyright (c) 2017-2018 Centrify Corporation
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,9 +29,11 @@
 # - Ubuntu Server 14.04                                 32bit
 # - Ubuntu Server 14.04 LTS (HVM), SSD Volume Type      x86_64
 # - Ubuntu Server 16.04 LTS (HVM), SSD Volume Type      x86_64
+# - Ubuntu Server 18.04 LTS (HVM), SSD Volume Type      x86_64
 # - Amazon Linux AMI 2014.09                            32bit
 # - Amazon Linux AMI 2016.09.1.20161221 HVM             x86_64
 # - Amazon Linux AMI 2016.09.1.20161221  PV             x86_64
+# - Amazon Linux 2 LTS
 # - CentOS 7.2                                          x86_64
 # - SUSE Linux Enterprise Server 11 SP4 (PV)            x86_64
 # - SUSE Linux Enterprise Server 12 SP2 (HVM)           x86_64
@@ -100,8 +102,9 @@ function prerequisite()
 { 
     common_prerequisite
     r=0
-
-    if [ "$CENTRIFYDC_JOIN_TO_AD" = "yes" ];then
+	# only need AWS CLI if we are not using S3 to store login.keytab file. 
+	# So, check if join to AD and also CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION is not true
+    if [ "$CENTRIFYDC_JOIN_TO_AD" = "yes" -a "$CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION" != "yes" ]; then
         # Ensure that aws cli installed, otherwise we cannot download login.keytab from S3 bucket.
         if ! aws --version ;then
             if ! python --version ;then
@@ -136,7 +139,23 @@ function prerequisite()
                     return $r
                 fi
             fi
-            pip install awscli
+
+            case "$OS_NAME" in
+            ubuntu)
+                case "$OS_VERSION" in
+                14|14.*)
+                    pip install awscli --upgrade --user  
+                    export PATH=/root/.local/bin:$PATH
+                    ;;
+                *)  
+                    pip install awscli
+                    ;;
+                esac
+                ;;
+            *)  
+                pip install awscli
+                ;;
+            esac
             r=$?
             if [ $r -ne 0 ];then
                 echo "$CENTRIFY_MSG_PREX: AWS Command Line Interface installation failed!" 
@@ -209,10 +228,22 @@ function check_config()
             echo "$CENTRIFY_MSG_PREX: invalid CENTRIFYDC_HOSTNAME_FORMAT: $CENTRIFYDC_HOSTNAME_FORMAT" && return 1
             ;;
         esac
-        CENTRIFYDC_KEYTAB_S3_BUCKET=${CENTRIFYDC_KEYTAB_S3_BUCKET:-} 
-        if [ "$CENTRIFYDC_KEYTAB_S3_BUCKET" = "" ];then
-            echo "$CENTRIFY_MSG_PREX: requires a S3 bucket for the keytab file associated with the user who joins to Active Directory" 
-            return 1
+		CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION=${CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION:-}
+		if [ "$CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION" = "" ] || [ "$CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION" = "no" ]; then
+			CENTRIFYDC_KEYTAB_S3_BUCKET=${CENTRIFYDC_KEYTAB_S3_BUCKET:-}
+			if [ "$CENTRIFYDC_KEYTAB_S3_BUCKET" = "" ];then
+				echo "$CENTRIFY_MSG_PREX: requires a S3 bucket for the keytab file associated with the user who joins to Active Directory" 
+				return 1
+			fi
+		elif [ "$CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION" = "yes" ]; then
+			CENTRIFYDC_CUSTOM_KEYTAB_FUNCTION=${CENTRIFYDC_CUSTOM_KEYTAB_FUNCTION:-}
+			if [ "$CENTRIFYDC_CUSTOM_KEYTAB_FUNCTION" = "" ]; then
+				echo "$CENTRIFY_MSG_PREX: must define custom login function to obtain login.keytab"
+				return 1
+			fi
+		else
+			echo "$CENTRIFY_MSG_PREX:  illegal value specified for CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION.  Must be yes or no."
+			return 1
         fi
     fi
     centrify_packages=`echo -n "$CENTRIFYDC_ADDITIONAL_PACKAGES" | awk '{for(i=1;i<=NF;i++){ print $i;}}' | sort | uniq | awk '{printf("%s ", $1)}' |  awk 'BEGIN {invalid=0} {if(invalid != 1) {for(i=1;i<=NF;i++){if($i != "centrifydc-ldapproxy" && $i != "centrifydc-openssh" && $i != "") {invalid=1;printf("invalid ");break};if ( i == 1) { printf("%s", $i)} else { printf(" %s", $i)}} }}'`
@@ -261,13 +292,33 @@ function install_packages()
 
 function get_keytab_file()
 {
-    aws s3 cp s3://$CENTRIFYDC_KEYTAB_S3_BUCKET/login.keytab $centrifydc_deploy_dir/
-    r=$?
-    if [ $r -ne 0 ];then
-        echo "$CENTRIFY_MSG_PREX: download login.keytab from s3 bucket failed" 
-    fi
-    chmod 0600 $centrifydc_deploy_dir/login.keytab
-    return $r
+    if [ "$CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION" = "yes" ]; then
+		if [ "`type -t $CENTRIFYDC_CUSTOM_KEYTAB_FUNCTION`" == "function" ]; then
+			eval "$CENTRIFYDC_CUSTOM_KEYTAB_FUNCTION"
+			r=$?
+			if [ $r -ne 0 ]; then
+				echo "$CENTRIFY_MSG_PREX: download login.keytab from user defined function failed"
+			fi
+			if [ ! -f $centrifydc_deploy_dir/login.keytab ]; then
+				echo "$CENTRIFY_MSG_PREX: login.keytab not set up in custom function $CENTRIFYDC_CUSTOM_KEYTAB_FUNCTION."
+				# return 2 (ENOENT)
+				return 2
+			fi 
+			chmod 0600 $centrifydc_deploy_dir/login.keytab
+			return $r
+		else
+			echo "$CENTRIFY_MSG_PREX: user defined function does not exist or is not a function"
+			return 2
+		fi
+	else
+		aws s3 cp s3://$CENTRIFYDC_KEYTAB_S3_BUCKET/login.keytab $centrifydc_deploy_dir/
+		r=$?
+		if [ $r -ne 0 ];then
+			echo "$CENTRIFY_MSG_PREX: download login.keytab from s3 bucket failed" 
+		fi
+		chmod 0600 $centrifydc_deploy_dir/login.keytab
+		return $r
+	fi
 }
 
 function get_user_and_domain()
@@ -452,6 +503,4 @@ fi
 
 clean_files
 exit $r
-
-
 

@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# Copyright 2017 Centrify Corporation
+# Copyright (c) 2017-2018 Centrify Corporation
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,23 +30,18 @@
 #  - Join the instance to Active Directory (if requested)
 #
 # This script is tested on AWS EC2 using the following EC2 AMIs:
-# - Red Hat Enterprise Linux 6.5                        32bit
-# - Red Hat Enterprise Linux 6.5                        x86_64
-# - Red Hat Enterprise Linux 7.3                        x86_64
-# - Ubuntu Server 14.04                                 32bit
-# - Ubuntu Server 14.04 LTS (HVM), SSD Volume Type      x86_64
-# - Ubuntu Server 16.04 LTS (HVM), SSD Volume Type      x86_64
-# - Amazon Linux AMI 2014.09                            32bit
-# - Amazon Linux AMI 2016.09.1.20161221 HVM             x86_64
-# - Amazon Linux AMI 2016.09.1.20161221  PV             x86_64
-# - CentOS 7.2                                          x86_64
+# - Red Hat Enterprise Linux 7.5                        x86_64
+# - Ubuntu Server 14.04 LTS (HVM                        x86_64
+# - Ubuntu Server 16.04 LTS (HVM)                       x86_64
+# - Ubuntu Server 18.04 LTS (HVM)                       x86_64
+# - Amazon Linux AMI 2018.03.0 (HVM)                    x86_64
+# - Amazon Linux 2 LTS Candidate AMI (HVM)              x86_64
+# - CentOS 7 HVM                                        x86_64
 # - SUSE Linux Enterprise Server 11 SP4 (PV)            x86_64
 # - SUSE Linux Enterprise Server 12 SP2 (HVM)           x86_64
 #
 # Note that Amazon EC2 user data is limited to 16KB.   Please refer to README
 # file for instructions and other information.
-#
-#
 
 ####### Set Configuration Parameters ##########################
 # This specifies whether the script will install CentrifyCC and 
@@ -66,8 +61,11 @@ export CENTRIFYCC_TENANT_URL=
 export CENTRIFYCC_ENROLLMENT_CODE=
 
 # Specify the CIP roles (as a comma separated list) where members can log in to the instance.
-# Cannot be empty.
 export CENTRIFYCC_AGENT_AUTH_ROLES=
+
+# Specify the sets (as a comma separated list) where this machine will be a member of.
+# A value must be specified in CENTRIFYCC_AGENT_SETS and/or CENTRIFYCC_AGENT_AUTH_ROLES
+export CENTRIFYCC_AGENT_SETS=''
 
 # Specify the features (as a comma separated list) to enable in cenroll CLI.
 # Cannot be empty.
@@ -87,7 +85,8 @@ export CENTRIFYCC_COMPUTER_NAME_PREFIX=
 #  /usr/sbin/cenroll \
 #        --tenant "$CENTRIFYCC_TENANT_URL" \
 #        --code "$CENTRIFYCC_ENROLLMENT_CODE" \
-#        --agentauth "$CENTRIFYCC_AGENT_AUTH_ROLES" \
+#        --agentauth "$CENTRIFYCC_AGENT_AUTH_ROLES" \ (if specified)
+#        --resource-set "$CENTRIFYCC_AGENT_SETS" \ (if specified)
 #        --features "$CENTRIFYCC_FEATURES" \
 #        --name "$CENTRIFYCC_COMPUTER_NAME_PREFIX-<aws instance id>" \
 #        --address "$CENTRIFYCC_NETWORK_ADDR"
@@ -115,15 +114,32 @@ export CENTRIFYDC_ZONE_NAME=
 # so only the first 15 characters of instance ID is used if INSTANCE_ID is specified.
 export CENTRIFYDC_HOSTNAME_FORMAT=PRIVATE_IP
 
+#Specify how the login.keytab will be obtained, either through a custom function or 
+#by standard download from the s3 bucket. Optional -- default download through s3 bucket (default: no).
+export CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION=no
+
+#Define the custom function to be used to download the login.keytab if 
+#CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION=yes in my_function(). Do not change anything if 
+#downloading from an s3 bucket (default).
+
+my_function()
+{
+	# replace the line below with your function 
+	:
+}
+export -f my_function
+export CENTRIFYDC_CUSTOM_KEYTAB_FUNCTION=my_function
+
 # This specifies a s3 bucket to download the login.keytab that has the credential of 
 # the user who joins the computer to AD. Note that the startup script will use AWS CLI
-# to download this file.   Cannot be empty.
+# to download this file.  Leave empty if retreiving the login.keytab from external 
+#function (CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION=yes).
 export CENTRIFYDC_KEYTAB_S3_BUCKET=
 
 # This specifies whether to install additional Centrify packages. 
 # The package names shall be separated by space.
 # Allowed value: centrifydc-openssh centrifydc-ldapproxy (default: none).
-# For example: ADDITIONAL_PACKAGES="centrifydc-openssh centrifydc-ldapproxy"
+# For example: CENTRIFYDC_ADDITIONAL_PACKAGES="centrifydc-openssh centrifydc-ldapproxy"
 export CENTRIFYDC_ADDITIONAL_PACKAGES=''
 
 # This specifies additional adjoin options.
@@ -166,6 +182,7 @@ if [ "$DEPLOY_CENTRIFYDC" = "yes" ];then
   scripts=("common.sh" "centrifydc.sh")
   for script in ${scripts[@]} ;do
     curl --fail \
+		 -s \
          -o $centrifydc_deploy_dir/$script \
          -L "$CENTRIFY_GIT_PREFIX_URL/$script" >> $centrifydc_deploy_dir/deploy.log 2>&1
     r=$?
@@ -186,6 +203,7 @@ if [ "$DEPLOY_CENTRIFYCC" = "yes" ];then
   scripts=("common.sh" "centrifycc.sh")
   for script in ${scripts[@]} ;do
     curl --fail \
+		 -s \
          -o $centrifycc_deploy_dir/$script \
          -L "$CENTRIFY_GIT_PREFIX_URL/$script" >> $centrifycc_deploy_dir/deploy.log 2>&1
     r=$?
