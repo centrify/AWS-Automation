@@ -645,3 +645,57 @@ function enable_sshd_password_auth()
     return 0
 }
 
+function enable_sshd_challenge_response_auth()
+{
+    ssh_from=''
+    if test -x /usr/share/centrifydc/sbin/sshd ;then
+        if grep -E '^ChallengeResponseAuthentication[[:space:]]+no[[:space:]]*$' /etc/centrifydc/ssh/sshd_config >/dev/null ; then
+            ssh_from='centrifydc'
+            src_conf=/etc/centrifydc/ssh/sshd_config
+            backup_conf=/etc/centrifydc/ssh/sshd_config.deploy_backup
+        fi
+    else
+        if grep -E '^ChallengeResponseAuthentication[[:space:]]+no[[:space:]]*$' /etc/ssh/sshd_config >/dev/null ; then
+            ssh_from='stock'
+            src_conf=/etc/ssh/sshd_config
+            backup_conf=/etc/ssh/sshd_config.centrify_backup
+        fi
+    fi
+    if [ "$ssh_from" != "" ];then
+        [ ! -f $backup_conf ] && cp $src_conf $backup_conf
+        /bin/sed -i -r 's/^ChallengeResponseAuthentication[[:space:]]+no[[:space:]]*$/ChallengeResponseAuthentication yes/g' $src_conf
+        r=$?
+        if [ $r -ne 0 ];then
+            echo "$CENTRIFY_MSG_PREX: Update ChallengeResponseAuthentication in $src_conf failed!"
+            return $r
+        fi
+        r=1
+        case "$OS_NAME" in
+        ubuntu)
+            if [ "$ssh_from" = "centrifydc" ];then
+                service centrify-sshd restart
+            else
+                service ssh restart
+            fi
+            r=$?
+            ;;
+        *)
+            if [ "$ssh_from" = "centrifydc" ];then
+                sshd_name=centrify-sshd
+            else
+                sshd_name=sshd
+            fi
+            if [ -x /usr/bin/systemctl ]; then
+                systemctl restart $sshd_name.service
+            else
+                /etc/init.d/$sshd_name restart
+            fi
+            r=$?
+            ;;
+        esac
+        return $r
+    fi
+   
+    return 0
+}
+

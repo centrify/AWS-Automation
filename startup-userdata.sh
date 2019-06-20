@@ -162,7 +162,7 @@ export ENABLE_SSM_AGENT=no
 
 set -x
 # Where to download centrifycc rpm package.
-export CENTRIFYCC_DOWNLOAD_PREFIX=http://edge.centrify.com/products/cloud-service/CliDownload/Centrify
+export CENTRIFYCC_DOWNLOAD_PREFIX=https://edge.centrify.com/products/cloud-service/CliDownload/Centrify
 CENTRIFY_MSG_PREX='Orchestration(user-data)'
 TEMP_DEPLOY_DIR=/tmp/auto_centrify_deployment
 rm -rf $TEMP_DEPLOY_DIR
