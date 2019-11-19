@@ -218,6 +218,43 @@ function resolve_rpm_name()
     return $r
 }
 
+function install_unenroll_enroll_service()
+{
+    # save the cenroll info so it can be used by the centrifycc-enroll service
+    ENV_FILE="/etc/centrifycc/cenroll.env"
+    
+    echo "CMDPARAM=\"${CMDPARAM[@]}\"" >> $ENV_FILE
+    echo "TENANT_URL=$CENTRIFYCC_TENANT_URL" >> $ENV_FILE
+    echo "ENROLLMENT_CODE=$CENTRIFYCC_ENROLLMENT_CODE" >> $ENV_FILE
+    echo "FEATURES=$CENTRIFYCC_FEATURES" >> $ENV_FILE
+    echo "COMPUTER_NAME_PREFIX=$CENTRIFYCC_COMPUTER_NAME_PREFIX" >> $ENV_FILE
+    echo "NETWORK_ADDR_TYPE=$CENTRIFYCC_NETWORK_ADDR_TYPE" >> $ENV_FILE
+    
+    chmod 644 $ENV_FILE
+    
+    CENROLL_SCRIPT_PATH="/etc/centrifycc/scripts"
+    mkdir -p $CENROLL_SCRIPT_PATH
+    
+    # needed by centrifycc-enroll.service
+    cp -f $centrifycc_deploy_dir/cenroll.sh $CENROLL_SCRIPT_PATH/cenroll.sh
+    chmod 744 $CENROLL_SCRIPT_PATH/cenroll.sh
+    
+    SYSTEMD_PATH="/lib"
+    if [ -d "/usr/lib/systemd/system" ]; then
+        SYSTEMD_PATH="/usr/lib"
+    fi
+
+    cp -f $centrifycc_deploy_dir/centrifycc-unenroll.service $SYSTEMD_PATH/systemd/system/centrifycc-unenroll.service
+    cp -f $centrifycc_deploy_dir/centrifycc-enroll.service $SYSTEMD_PATH/systemd/system/centrifycc-enroll.service
+    
+    chmod 644 $SYSTEMD_PATH/systemd/system/centrifycc-unenroll.service
+    chmod 644 $SYSTEMD_PATH/systemd/system/centrifycc-enroll.service
+    
+    # need to start the centrifycc-unenroll.service immediately so when stop instance, cunenroll will be executed.
+    systemctl enable centrifycc-unenroll.service --now
+    systemctl enable centrifycc-enroll.service
+}
+
 function start_deploy()
 { 
     resolve_rpm_name
@@ -238,6 +275,9 @@ function start_deploy()
     do_cenroll
     r=$? && [ $r -ne 0 ] && return $r
   
+    install_unenroll_enroll_service
+    
+    
     return 0
 }
 

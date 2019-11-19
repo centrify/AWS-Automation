@@ -1,0 +1,28 @@
+[Unit]
+
+Description=Join system to AD
+After=network.target syslog.target local-fs.target
+
+[Service]
+
+Type=forking
+
+EnvironmentFile=/etc/centrifydc/adjoin.env
+
+ExecStartPre=/usr/share/centrifydc/kerberos/bin/kinit -kt $LOGIN_KEYTAB -C $ADJOINER
+ExecStart=/etc/centrifydc/scripts/systemd/adjoin.sh
+ExecStartPost=/bin/rm -rf /var/prestage_cache
+ExecStartPost=/usr/share/centrifydc/kerberos/bin/kdestroy
+
+ExecStop=/bin/true
+
+PIDFile=/var/run/adclient.pid
+StandardOutput=syslog+console
+
+# Set a reasonable timeout period to avoid large delay of remaining services.
+TimeoutSec=180s
+
+[Install]
+
+WantedBy=multi-user.target
+

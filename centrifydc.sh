@@ -433,6 +433,47 @@ function clean_files()
     return 0
 }
 
+function install_leave_join_service ()
+{
+    # install keytab file.
+    cp -f $centrifydc_deploy_dir/login.keytab /etc/centrifydc/login.keytab
+    chmod 400 /etc/centrifydc/login.keytab
+    
+    ENV_FILE="/etc/centrifydc/adjoin.env"
+    
+    # save the adjoin info so it can be used by the centrifydc-adleave centrifydc-adjoin service
+    echo "ADJOINER=$join_user" >> $ENV_FILE
+    echo "LOGIN_KEYTAB=/etc/centrifydc/login.keytab" >> $ENV_FILE
+    echo "DOMAIN=$domain_name" >> $ENV_FILE
+    echo "ZONE=$CENTRIFYDC_ZONE_NAME" >> $ENV_FILE
+    echo "ADDITIONAL_OPS=$CENTRIFYDC_ADJOIN_ADDITIONAL_OPTIONS" >> $ENV_FILE
+    echo "CENTRIFYDC_HOSTNAME_FORMAT=$CENTRIFYDC_HOSTNAME_FORMAT" >> $ENV_FILE
+    
+    chmod 644 $ENV_FILE
+    
+    # adjoin.sh needs the common.sh
+    cp -f $centrifydc_deploy_dir/common.sh /etc/centrifydc/scripts/common.sh
+    cp -f $centrifydc_deploy_dir/adjoin.sh /etc/centrifydc/scripts/systemd/adjoin.sh
+    
+    chmod 644 /etc/centrifydc/scripts/common.sh
+    chmod 744 /etc/centrifydc/scripts/systemd/adjoin.sh
+    
+    SYSTEMD_PATH="/lib"
+    if [ -d "/usr/lib/systemd/system" ]; then
+        SYSTEMD_PATH="/usr/lib"
+    fi
+    
+    cp -f $centrifydc_deploy_dir/centrifydc-adleave.service $SYSTEMD_PATH/systemd/system/centrifydc-adleave.service
+    cp -f $centrifydc_deploy_dir/centrifydc-adjoin.service $SYSTEMD_PATH/systemd/system/centrifydc-adjoin.service
+    
+    chmod 644 $SYSTEMD_PATH/systemd/system/centrifydc-adleave.service
+    chmod 644 $SYSTEMD_PATH/systemd/system/centrifydc-adjoin.service
+    
+    # need to start the centrifydc-adleave immediately so when stop instance, adleave will be executed.
+    systemctl enable centrifydc-adleave.service --now
+    systemctl enable centrifydc-adjoin.service 
+}
+
 function start_deploy()
 {
     prepare_repo
@@ -456,9 +497,14 @@ function start_deploy()
   
       do_adjoin
       r=$? && [ $r -ne 0 ] && return $r
+      
+      install_leave_join_service
     fi
   
     enable_sshd_password_auth
+    r=$? && [ $r -ne 0 ] && return $r
+
+    enable_sshd_challenge_response_auth
     r=$? && [ $r -ne 0 ] && return $r
 
     return 0

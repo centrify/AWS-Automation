@@ -1,0 +1,25 @@
+[Unit]
+
+Description=Enroll Centrify Agent
+After=network.target syslog.target local-fs.target
+
+[Service]
+
+# Not forking like adclient due to a Golang daemon limitation
+# Type=forking
+
+EnvironmentFile=/etc/centrifycc/cenroll.env
+
+ExecStart=/etc/centrifycc/scripts/cenroll.sh
+
+ExecStop=/bin/true
+
+StandardOutput=syslog+console
+
+# Set a reasonable timeout period to avoid large delay of remaining services.
+TimeoutSec=180s
+
+[Install]
+
+WantedBy=multi-user.target
+

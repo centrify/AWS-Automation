@@ -179,7 +179,7 @@ if [ "$DEPLOY_CENTRIFYDC" = "yes" ];then
   export centrifydc_deploy_dir=$TEMP_DEPLOY_DIR/centrifydc
   mkdir -p $centrifydc_deploy_dir
   # Download deployment script from github.
-  scripts=("common.sh" "centrifydc.sh")
+  scripts=("common.sh" "centrifydc.sh" "centrifydc-adleave.service" "centrifydc-adjoin.service" "adjoin.sh")
   for script in ${scripts[@]} ;do
     curl --fail \
 		 -s \
@@ -200,7 +200,7 @@ if [ "$DEPLOY_CENTRIFYCC" = "yes" ];then
   export centrifycc_deploy_dir=$TEMP_DEPLOY_DIR/centrifycc
   mkdir -p $centrifycc_deploy_dir
   # Download deployment script from github.
-  scripts=("common.sh" "centrifycc.sh")
+  scripts=("common.sh" "centrifycc.sh" "centrifycc-unenroll.service" "centrifycc-enroll.service" "cenroll.sh")
   for script in ${scripts[@]} ;do
     curl --fail \
 		 -s \

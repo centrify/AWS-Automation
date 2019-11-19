@@ -1,0 +1,18 @@
+[Unit]
+
+Description=Unenroll Centrify agent
+After=network.target syslog.target local-fs.target
+
+[Service]
+
+Type=oneshot
+RemainAfterExit=yes
+ExecStop=/usr/sbin/cunenroll -md 
+StandardOutput=syslog+console
+
+# Set a reasonable timeout period to avoid large delay of remaining services.
+TimeoutSec=180s
+
+[Install]
+
+WantedBy=multi-user.target
