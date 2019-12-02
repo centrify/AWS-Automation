@@ -35,8 +35,7 @@
 # - Amazon Linux AMI 2016.09.1.20161221  PV             x86_64
 # - Amazon Linux 2 LTS
 # - CentOS 7.2                                          x86_64
-# - SUSE Linux Enterprise Server 11 SP4 (PV)            x86_64
-# - SUSE Linux Enterprise Server 12 SP2 (HVM)           x86_64
+# - SUSE Linux Enterprise Server 12 SP4 (HVM)           x86_64
 #
 
 # Use python to upgrade awscli.

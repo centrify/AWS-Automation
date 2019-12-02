@@ -30,8 +30,7 @@
 # - Amazon Linux AMI 2018.03.0 (HVM)                    x86_64
 # - Amazon Linux 2 LTS Candidate AMI (HVM)              x86_64
 # - CentOS 7 HVM                                        x86_64
-# - SUSE Linux Enterprise Server 11 SP4 (PV)            x86_64
-# - SUSE Linux Enterprise Server 12 SP2 (HVM)           x86_64
+# - SUSE Linux Enterprise Server 12 SP4 (HVM)           x86_64
 #
 
 

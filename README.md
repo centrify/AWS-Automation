@@ -16,8 +16,7 @@ The following platforms are supported:
 * Amazon Linux AMI 2018.03.0
 * Amazon Linux 2
 * CentOS 7.x
-* SUSE Linux Enterprise Server 11 SP4 
-* SUSE Linux Enterprise Server 12 SP2 
+* SUSE Linux Enterprise Server 12 SP4
 
 # Prerequisite
 - You need the following AWS permissions:
