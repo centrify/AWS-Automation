@@ -10,7 +10,6 @@ need to upload the script as "user data".
 
 The following platforms are supported:
 * Red Hat Enterprise Linux 7.5 or later
-* Ubuntu Server 14.04 LTS
 * Ubuntu Server 16.04 LTS
 * Ubuntu Server 18.04 LTS
 * Amazon Linux AMI 2018.03.0

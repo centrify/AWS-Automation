@@ -26,8 +26,6 @@
 # - Red Hat Enterprise Linux 6.5                        32bit
 # - Red Hat Enterprise Linux 6.5                        x86_64
 # - Red Hat Enterprise Linux 7.3                        x86_64
-# - Ubuntu Server 14.04                                 32bit
-# - Ubuntu Server 14.04 LTS (HVM), SSD Volume Type      x86_64
 # - Ubuntu Server 16.04 LTS (HVM), SSD Volume Type      x86_64
 # - Ubuntu Server 18.04 LTS (HVM), SSD Volume Type      x86_64
 # - Amazon Linux AMI 2014.09                            32bit
@@ -113,6 +111,15 @@ function prerequisite()
                     r=$?
                     ;;
                 ubuntu)
+                    case "$OS_VERSION" in
+                    16|16.*)
+                        ;;
+                    *)
+                        mv /etc/resolv.conf /tmp/
+                        ln -s /run/systemd/resolve/resolv.conf /etc/resolv.conf
+                        ;;
+                    esac
+                    apt-get update
                     apt-get -y install python
                     r=$?
                     ;;
@@ -429,6 +436,18 @@ function clean_files()
     if [ -e $centrifydc_deploy_dir/login.keytab ];then
       rm -rf $centrifydc_deploy_dir/login.keytab
     fi
+    # revert the symlink of /etc/resolv.conf to its original file in Ubuntu 18.04+
+    case $OS_NAME in
+    ubuntu)
+        case $OS_VERSION in
+        16|16.*)
+            ;;
+        *)
+            mv /tmp/resolv.conf /etc/
+            ;;
+        esac
+        ;;
+    esac
     return 0
 }
 

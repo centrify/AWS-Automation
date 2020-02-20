@@ -242,6 +242,14 @@ function common_prerequisite()
             return $r
         fi
         ;;
+    sles)
+        sudo zypper -n install apparmor-profiles yast2-apparmor
+        r=$?
+        if [ $r -ne 0 ];then
+            echo "$CENTRIFY_MSG_PREX: apparmor installation failed"
+            return $r
+        fi
+        ;;
     *)
         echo "$CENTRIFY_MSG_PREX: need not install perl and selinux-policy-targeted"
         r=0

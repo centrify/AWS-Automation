@@ -24,7 +24,6 @@
 #
 # This script is tested on AWS Autoscaling using the following EC2 AMIs:
 # - Red Hat Enterprise Linux 7.5                        x86_64
-# - Ubuntu Server 14.04 LTS (HVM                        x86_64
 # - Ubuntu Server 16.04 LTS (HVM)                       x86_64
 # - Ubuntu Server 18.04 LTS (HVM)                       x86_64
 # - Amazon Linux AMI 2018.03.0 (HVM)                    x86_64
@@ -204,10 +203,10 @@ function resolve_rpm_name()
         CENTRIFYCC_RPM_NAME="CentrifyCC-rhel6.x86_64.rpm"
         ;;
     ubuntu)
-        CENTRIFYCC_RPM_NAME="centrifycc-deb7-x86_64.deb"
+        CENTRIFYCC_RPM_NAME="centrifycc-deb8-x86_64.deb"
         ;;
     sles)
-        CENTRIFYCC_RPM_NAME="CentrifyCC-suse11.x86_64.rpm"
+        CENTRIFYCC_RPM_NAME="CentrifyCC-suse12.x86_64.rpm"
         ;;
     *)
         echo "$CENTRIFY_MSG_PREX: cannot resolve rpm package name for centrifycc on current OS $OS_NAME"
