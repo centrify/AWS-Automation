@@ -115,7 +115,7 @@ function check_supported_os()
         case "$OS_NAME" in 
         rhel|centos)
             case "$OS_VERSION" in
-            6|6.*|7|7.*)
+            6|6.*|7|7.*|8|8.*)
                 r=0
                 ;;
             *)
@@ -170,7 +170,7 @@ function check_supported_os()
         case "$OS_NAME" in 
         rhel|centos)
             case "$OS_VERSION" in
-            6|6.*|7|7.*)
+            6|6.*|7|7.*|8|8.*)
                 r=0
                 ;;
             *)
@@ -535,7 +535,7 @@ function install_aws_ssm_agent_on_rhel()
         6|6.*)
             ctl_cmd_prefix=''
             ;;
-        7|7.*)
+        7|7.*|8|8.*)
             ctl_cmd_prefix='systemctl '
             ;;
         esac

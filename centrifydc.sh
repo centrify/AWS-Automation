@@ -45,18 +45,22 @@
 # aws s3 cp will succeed.
 function upgrade_awscli()
 {
-    if ! python --version ;then
+    if ! python3 --version ;then
         case "$OS_NAME" in
-        rhel|amzn|centos)
-            yum install python -y
+        rhel|centos)
+            yum install python3 -y
+            r=$?
+            ;;
+	amzn)
+	    yum install python34 -y
             r=$?
             ;;
         ubuntu)
-            apt-get -y install python
+            apt-get -y install python3
             r=$?
             ;;
         sles)
-            zypper --non-interactive install python
+            zypper --non-interactive install python3
             r=$?
             ;;
         *)
@@ -69,8 +73,18 @@ function upgrade_awscli()
         fi
     fi
     if ! pip --version ;then
+    	case "$OS_NAME" in 
+        ubuntu)
+            case "$OS_VERSION" in
+            16|16.*) :
+                ;;
+            *)
+                apt-get -y install python3-distutils 
+                ;;  
+            esac
+        esac
         curl --fail -s -O https://bootstrap.pypa.io/get-pip.py
-        python get-pip.py
+        python3 get-pip.py
         r=$r
         if [ $r -ne 0 ];then
             echo "$CENTRIFY_MSG_PREX: pip installation failed"
@@ -104,12 +118,16 @@ function prerequisite()
     if [ "$CENTRIFYDC_JOIN_TO_AD" = "yes" -a "$CENTRIFYDC_USE_CUSTOM_KEYTAB_FUNCTION" != "yes" ]; then
         # Ensure that aws cli installed, otherwise we cannot download login.keytab from S3 bucket.
         if ! aws --version ;then
-            if ! python --version ;then
+            if ! python3 --version ;then
                 case "$OS_NAME" in
-                rhel|amzn|centos)
-                    yum install python -y
+                rhel|centos)
+                    yum install python3 -y
                     r=$?
                     ;;
+		amzn)
+		    yum install python34 -y
+		    r=$?
+		    ;;
                 ubuntu)
                     case "$OS_VERSION" in
                     16|16.*)
@@ -120,11 +138,11 @@ function prerequisite()
                         ;;
                     esac
                     apt-get update
-                    apt-get -y install python
+                    apt-get -y install python3
                     r=$?
                     ;;
                 sles)
-                    zypper --non-interactive install python
+                    zypper --non-interactive install python3
                     r=$?
                     ;;
                 *)
@@ -137,8 +155,18 @@ function prerequisite()
                 fi
             fi
             if ! pip --version ;then
+	    	case "$OS_NAME" in 
+        	ubuntu)
+            	    case "$OS_VERSION" in
+            	    16|16.*) :
+                	 ;;
+            	    *)
+                	 apt-get -y install python3-distutils 
+                	 ;;  
+            	    esac
+        	esac
                 curl --fail -s -O https://bootstrap.pypa.io/get-pip.py
-                python get-pip.py
+                python3 get-pip.py
                 r=$r
                 if [ $r -ne 0 ];then
                     echo "$CENTRIFY_MSG_PREX: pip installation failed"
