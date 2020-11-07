@@ -215,6 +215,11 @@ yum update without the -y flag)." [1]
 
 "User data is limited to 16 KB." [2]
 
+Q. How to use putty (instead of web-based ssh client from admin portal) to connect the enrolled machine?
+Change the security group for the connector instance to allow for this. Keep the VPC same for all the security groups. 
+Allow connector's security group to listen to port 22, of enrolled machines(Change Inbound rule from AWS Web Console).
+From connector machine, now ssh will be enabled via putty.
+
 References:
 [1] Running Commands on Your Linux Instance at Launch
   - http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html

@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# Copyright 2017-2018 Centrify Corporation
+# Copyright 2017-2020 Centrify Corporation
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,11 +24,12 @@
 #
 # This script is tested on AWS Autoscaling using the following EC2 AMIs:
 # - Red Hat Enterprise Linux 7.5                        x86_64
+# - Red Hat Enterprise Linux 8                          x86_64
 # - Ubuntu Server 16.04 LTS (HVM)                       x86_64
 # - Ubuntu Server 18.04 LTS (HVM)                       x86_64
-# - Amazon Linux AMI 2018.03.0 (HVM)                    x86_64
 # - Amazon Linux 2 LTS Candidate AMI (HVM)              x86_64
 # - CentOS 7 HVM                                        x86_64
+# - CentOS 8 HVM                                        x86_64
 # - SUSE Linux Enterprise Server 12 SP4 (HVM)           x86_64
 #
 
@@ -45,10 +46,6 @@ function prerequisite()
 
 function check_config()
 {
-    if [ "$ENABLE_SSM_AGENT" != "yes" -a "$ENABLE_SSM_AGENT" != "no" ];then
-        echo "$CENTRIFY_MSG_PREX: invalid ENABLE_SSM_AGENT: $ENABLE_SSM_AGENT" && return 1
-    fi
-  
     if [ "$CENTRIFYCC_TENANT_URL" = "" ];then
         echo "$CENTRIFY_MSG_PREX: must specify CENTRIFYCC_TENANT_URL!" 
         return 1
@@ -203,7 +200,7 @@ function resolve_rpm_name()
         CENTRIFYCC_RPM_NAME="CentrifyCC-rhel6.x86_64.rpm"
         ;;
     ubuntu)
-        CENTRIFYCC_RPM_NAME="centrifycc-deb8-x86_64.deb"
+        CENTRIFYCC_RPM_NAME="centrifycc-deb9-x86_64.deb"
         ;;
     sles)
         CENTRIFYCC_RPM_NAME="CentrifyCC-suse12.x86_64.rpm"
@@ -274,7 +271,7 @@ function start_deploy()
     r=$? && [ $r -ne 0 ] && return $r
   
     install_unenroll_enroll_service
-    
+    r=$? && [ $r -ne 0 ] && return $r
     
     return 0
 }
@@ -292,7 +289,7 @@ detect_os
 r=$? 
 [ $r -ne 0 ] && echo "$CENTRIFY_MSG_PREX: detect OS failed  [exit code=$r]" && exit $r
 
-check_supported_os centrifycc not_support_ssm
+check_supported_os centrifycc
 r=$? 
 [ $r -ne 0 ] && echo "$CENTRIFY_MSG_PREX: current OS is not supported [exit code=$r]" && exit $r
 

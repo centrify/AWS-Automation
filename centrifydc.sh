@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# Copyright (c) 2017-2018 Centrify Corporation
+# Copyright (c) 2017-2020 Centrify Corporation
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,14 +23,10 @@
 # adjoin to Active Directory.
 #
 # This script is tested on AWS Autoscaling using the following EC2 AMIs:
-# - Red Hat Enterprise Linux 6.5                        32bit
-# - Red Hat Enterprise Linux 6.5                        x86_64
-# - Red Hat Enterprise Linux 7.3                        x86_64
+# - Red Hat Enterprise Linux 7.3 or later               x86_64
+# - Red Hat Enterprise Linux 8                          x86_64
 # - Ubuntu Server 16.04 LTS (HVM), SSD Volume Type      x86_64
 # - Ubuntu Server 18.04 LTS (HVM), SSD Volume Type      x86_64
-# - Amazon Linux AMI 2014.09                            32bit
-# - Amazon Linux AMI 2016.09.1.20161221 HVM             x86_64
-# - Amazon Linux AMI 2016.09.1.20161221  PV             x86_64
 # - Amazon Linux 2 LTS
 # - CentOS 7.2                                          x86_64
 # - SUSE Linux Enterprise Server 12 SP4 (HVM)           x86_64
@@ -225,22 +221,11 @@ function prerequisite()
         r=$?
         [ $r -ne 0 ] && echo "$CENTRIFY_MSG_PREX: awscli configure failed" && return $r
     fi
-  
-    if [ "$ENABLE_SSM_AGENT" = "yes" ];then
-        install_aws_ssm_agent
-        r=$?
-        [ $r -ne 0 ] && return $r
-    fi
-  
     return 0
 }
 
 function check_config()
 {
-    if [ "$ENABLE_SSM_AGENT" != "yes" -a "$ENABLE_SSM_AGENT" != "no" ];then
-        echo "$CENTRIFY_MSG_PREX: invalid ENABLE_SSM_AGENT: $ENABLE_SSM_AGENT" && return 1
-    fi
-  
     if [ "$CENTRIFYDC_JOIN_TO_AD" != "no" -a "$CENTRIFYDC_JOIN_TO_AD" != "yes" ];then
         echo "$CENTRIFY_MSG_PREX: invalid CENTRIFYDC_JOIN_TO_AD: $CENTRIFYDC_JOIN_TO_AD" && return 1
     fi
@@ -571,7 +556,7 @@ detect_os
 r=$? 
 [ $r -ne 0 ] && echo "$CENTRIFY_MSG_PREX: detect OS failed [exit code=$r]" && exit $r
 
-check_supported_os centrifydc not_support_ssm
+check_supported_os centrifydc
 r=$? 
 [ $r -ne 0 ] && echo "$CENTRIFY_MSG_PREX: current OS is not supported [exit code=$r]" && exit $r
 

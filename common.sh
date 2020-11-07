@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# Copyright 2017 Centrify Corporation
+# Copyright 2017-2020 Centrify Corporation
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -105,12 +105,6 @@ function detect_os()
 function check_supported_os()
 {
     deploy_for="$1"
-    support_ssm="$2"
-    if [ "$support_ssm" != "support_ssm" -a "$support_ssm" != "not_support_ssm" ];then
-        echo "$CENTRIFY_MSG_PREX: the second parameter of check_supported_os is invalid"
-        return 1
-    fi
-    r=1
     if [ "$deploy_for" = "centrifydc" ];then
         case "$OS_NAME" in 
         rhel|centos)
@@ -139,10 +133,6 @@ function check_supported_os()
             esac
             ;;
         sles)
-            if [ "$support_ssm" = "support_ssm" ];then
-                echo "$CENTRIFY_MSG_PREX: AWS Run Command feature is not supported on SUSE"
-                return 1
-            fi
             if [ "$OS_BIT" = 32 ];then
                 echo "$CENTRIFY_MSG_PREX: doesn't support SUSE for 32 bit"
                 return 1
@@ -194,10 +184,6 @@ function check_supported_os()
             esac
             ;;
         sles)
-            if [ "$support_ssm" = "support_ssm" ];then
-                echo "$CENTRIFY_MSG_PREX: AWS Run Command feature is not supported on SUSE"
-                return 1
-            fi
             case "$OS_VERSION" in
             11|11.*|12|12.*)
                 r=0
@@ -256,11 +242,6 @@ function common_prerequisite()
         ;;
     esac
     [ $r -ne 0 ] && return $r
-
-    if [ "$ENABLE_SSM_AGENT" = "yes" ];then
-        install_aws_ssm_agent
-        r=$?
-    fi
     return $r
 }
 
@@ -402,201 +383,6 @@ function install_packages_from_repo()
         ;;
     esac
     return $r
-}
-
-function install_aws_ssm_agent_on_ubuntu()
-{
-    case "$OS_VERSION" in
-        14|14*)
-            aws_ssm=`dpkg -l  |  grep -E 'amazon-ssm-agent' | awk '{printf("%s", $2)}'`
-            info=`status amazon-ssm-agent`
-            is_old_os="true"
-            ;;
-        16|16*)
-            #16.04 version with build date earlier than 2018-06-27 uses dpkg and later ones uses snap to install services
-            
-            ami_id=`curl 169.254.169.254/latest/meta-data/ami-id`
-            #get build date
-            ami_built_on=`aws ec2 describe-images --image-ids $ami_id --region $region --output text | awk '{print $13}'`
-            if [ -z $ami_built_on ]; then
-                echo "$CENTRIFY_MSG_PREX: could not retreive built date of the ami"
-                return 1
-            fi
-            
-            ami_built_on=`date -d "$ami_built_on" +%s`
-            date_identifier=`date -d "2018-06-27" +%s`
-            if [ $ami_built_on -lt $date_identifier ]; then
-                aws_ssm=`dpkg -l  |  grep -E 'amazon-ssm-agent' | awk '{printf("%s", $2)}'`
-                info=`systemctl status amazon-ssm-agent`
-                is_old_os="true"
-            else
-                aws_ssm=`snap list | grep -E 'amazon-ssm-agent' | awk '{printf("%s", $1)}'`
-                info=`systemctl status snap.amazon-ssm-agent.amazon-ssm-agent.service`
-                is_old_os="false"
-            fi
-            ;;
-        18|18*)
-            aws_ssm=`snap list | grep -E 'amazon-ssm-agent' | awk '{printf("%s", $1)}'`
-            info=`systemctl status snap.amazon-ssm-agent.amazon-ssm-agent.service`
-            is_old_os="false"
-            ;;
-
-    esac
-        
-    if [ "$aws_ssm" = "" ];then
-        aws_ssm_installed=no
-    else
-        aws_ssm_installed=yes
-    fi
-    if [ "$aws_ssm_installed" = "no" ];then
-        if [ "$is_old_os" = "true" ];then
-            if [ "$OS_BIT" = "64" ];then
-                curl --fail --silent https://amazon-ssm-$region.s3.amazonaws.com/latest/debian_amd64/amazon-ssm-agent.deb -o /tmp/amazon-ssm-agent.deb
-            else 
-                curl --fail --silent https://amazon-ssm-$region.s3.amazonaws.com/latest/debian_386/amazon-ssm-agent.deb -o /tmp/amazon-ssm-agent.deb
-            fi
-            r=$?
-            if [ $r -ne 0 ];then
-                echo "$CENTRIFY_MSG_PREX: curl download amazon-ssm-agent rpm package failed"
-                return $r
-            fi
-            
-            dpkg -i /tmp/amazon-ssm-agent.deb
-    
-        else
-            snap install amazon-ssm-agent --classic
-        fi
-        r=$?
-        if [ $r -ne 0 ];then
-            echo "$CENTRIFY_MSG_PREX: amazon-ssm-agent installation failure occurred" 
-            return $r
-        fi
-    fi
- 
-    try=5
-    r=1
-
-    while [ $try -gt 0 ];do
-    if echo $info | grep 'running' >/dev/null;then
-        r=0
-        break
-    else
-        r=1
-        sleep 2
-    fi
-    try=$((try-1))
-    done
-
-
-    if [ $r -eq 0 ];then
-        if [ "$is_old_os" = "true" ];then
-            rm -rf /tmp/amazon-ssm-agent.deb
-        fi
-    else
-        echo "amazon-ssm-agent doesn't start successfully"
-    fi
-
-    return $r
-}
-
-function install_aws_ssm_agent_on_rhel()
-{
-    yum list installed | grep -E -w '^amazon-ssm-agent' >/dev/null
-    r=$?
-    if [ $r -ne 0 ];then
-        if [ "$OS_BIT" = "64" ];then
-            curl --fail --silent https://amazon-ssm-$region.s3.amazonaws.com/latest/linux_amd64/amazon-ssm-agent.rpm -o /tmp/amazon-ssm-agent.rpm 
-        elif [ "$OS_BIT" = "32" ];then
-            curl --fail --silent https://amazon-ssm-$region.s3.amazonaws.com/latest/linux_386/amazon-ssm-agent.rpm -o /tmp/amazon-ssm-agent.rpm 
-        fi
-        r=$?
-        if [ $r -ne 0 ];then
-            echo "$CENTRIFY_MSG_PREX: curl download amazon-ssm-agent rpm package failed"
-            return $r
-        fi
-        yum install -y /tmp/amazon-ssm-agent.rpm
-        r=$?
-        if [ $r -ne 0 ];then
-            echo "$CENTRIFY_MSG_PREX: amazon-ssm-agent installation failure occurred" 
-            return $r
-        fi
-    fi
-
-    case "$OS_NAME" in
-    amzn)
-	    if [ -f /usr/bin/systemctl ] ; then
-			ctl_cmd_prefix='systemctl '
-		else
-			ctl_cmd_prefix=''
-		fi
-        ;;
-    rhel|centos)
-        case "$OS_VERSION" in
-        6|6.*)
-            ctl_cmd_prefix=''
-            ;;
-        7|7.*|8|8.*)
-            ctl_cmd_prefix='systemctl '
-            ;;
-        esac
-        ;;
-    esac
-                
-    try=5
-    r=1
-    while [ $try -gt 0 ];do
-        info=`${ctl_cmd_prefix}status amazon-ssm-agent`
-        if echo $info | grep 'running' >/dev/null;then
-            r=0
-            break
-        else
-            r=1
-            sleep 2
-        fi
-        try=$((try-1))
-    done
-    if [ $r -eq 0 ];then
-        rm -rf /tmp/amazon-ssm-agent.rpm
-    else
-        echo "amazon-ssm-agent doesn't start successfully"
-    fi
-    return $r
-}
-
-function install_aws_ssm_agent()
-{
-    region=`curl --fail --silent http://169.254.169.254/latest/meta-data/placement/availability-zone`
-    r=$?
-    if [ $r -ne 0 ];then
-        echo "$CENTRIFY_MSG_PREX: curl try to get available region failed"
-        return $r
-    fi
-        
-    if echo $region | grep -E '[0-9][a-z]$' >/dev/null ;then
-      region=`echo $region | sed -n 's/[a-z]$//p'`
-    fi
-    rm -rf /tmp/amazon-ssm-agent.rpm >/dev/null 2>/dev/null
-    rm -rf /tmp/amazon-ssm-agent.deb >/dev/null 2>/dev/null
-    r=1
-    case "$OS_NAME" in
-    amzn|centos|rhel)
-        install_aws_ssm_agent_on_rhel
-        r=$?
-        ;;
-    ubuntu)
-        install_aws_ssm_agent_on_ubuntu
-        r=$?
-        ;;
-    *)
-        echo "$CENTRIFY_MSG_PREX: the OS $OS_NAME is not supported"
-        ;;
-    esac
-          
-    if [ $r -ne 0 ];then
-      echo "$CENTRIFY_MSG_PREX: AWS SSM Agent Installation failed"
-      return $r 
-    fi
-    return 0
 }
 
 function enable_sshd_password_auth()

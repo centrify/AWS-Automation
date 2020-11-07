@@ -2,7 +2,7 @@
 
 ################################################################################
 #
-# Copyright (c) 2017-2018 Centrify Corporation
+# Copyright (c) 2017-2020 Centrify Corporation
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,12 +30,13 @@
 #  - Join the instance to Active Directory (if requested)
 #
 # This script is tested on AWS EC2 using the following EC2 AMIs:
-# - Red Hat Enterprise Linux 7.5                        x86_64
+# - Red Hat Enterprise Linux 7.3 or later               x86_64
+# - Red Hat Enterprise Linux 8                          x86_64
 # - Ubuntu Server 16.04 LTS (HVM)                       x86_64
 # - Ubuntu Server 18.04 LTS (HVM)                       x86_64
-# - Amazon Linux AMI 2018.03.0 (HVM)                    x86_64
 # - Amazon Linux 2 LTS Candidate AMI (HVM)              x86_64
-# - CentOS 7 HVM                                        x86_64
+# - CentOS 7.x HVM                                      x86_64
+# - CentOS 8.x HVM                                      x86_64
 # - SUSE Linux Enterprise Server 12 SP4 (HVM)           x86_64
 #
 # Note that Amazon EC2 user data is limited to 16KB.   Please refer to README
@@ -153,10 +154,6 @@ export CENTRIFYDC_ADJOIN_ADDITIONAL_OPTIONS=''
 export DEBUG_SCRIPT=no
 
 ####### End Configuration Parameters ###########
-
-# This specifies whether the EC2 instance support ssm.
-# SSM is NOT required unless AWS Lambda is used in AutoScaling group support
-export ENABLE_SSM_AGENT=no
 
 set -x
 # Where to download centrifycc rpm package.
