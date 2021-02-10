@@ -297,11 +297,11 @@ function prepare_repo()
         cat >/etc/yum.repos.d/centrify.repo <<END
 [centrify]
 name=centrify
-baseurl=https://$CENTRIFY_REPO_CREDENTIAL@repo.centrify.com/rpm-redhat/
+baseurl=https://cloudrepo.centrify.com/$CENTRIFYDC_REDHAT_TOKEN/rpm-redhat/rpm/any-distro/any-version/\$basearch/
 enabled=1
 repo_gpgcheck=1
 gpgcheck=1
-gpgkey=https://edge.centrify.com/products/RPM-GPG-KEY-centrify
+gpgkey=https://downloads.centrify.com/products/RPM-GPG-KEY-centrify
 END
         chmod 0600 /etc/yum.repos.d/centrify.repo
         yum clean all -y
@@ -314,21 +314,21 @@ END
 name=centrify-rpm-suse
 enabled=1
 autorefresh=1
-baseurl=https://$CENTRIFY_REPO_CREDENTIAL@repo.centrify.com/rpm-suse
+baseurl=https://cloudrepo.centrify.com/$CENTRIFYDC_SUSE_TOKEN/rpm-suse/rpm/any-distro/any-version/\$basearch
 type=rpm-md
 repo_gpgcheck=1
 gpgcheck=1
-gpgkey=https://edge.centrify.com/products/RPM-GPG-KEY-centrify
+gpgkey=https://downloads.centrify.com/products/RPM-GPG-KEY-centrify
 END
         chmod 0600 /etc/zypp/repos.d/centrify-rpm-suse.repo
         zypper clean -a
-        zypper --gpg-auto-import-keys refresh
+        zypper --no-gpg-checks refresh
         r=$?
         ;;
     ubuntu)
-        bash -c 'wget -O - https://edge.centrify.com/products/RPM-GPG-KEY-centrify | apt-key add -'
+        bash -c 'wget -O - https://downloads.centrify.com/products/RPM-GPG-KEY-centrify | apt-key add -'
         sed -i -r 's/^[[:blank:]]*no-debsig[[:blank:]]*$/#no-debsig/' /etc/dpkg/dpkg.cfg
-        echo "deb https://$CENTRIFY_REPO_CREDENTIAL@repo.centrify.com/deb stable main" >> /etc/apt/sources.list
+        echo "deb https://cloudrepo.centrify.com/$CENTRIFYDC_UBUNTU_TOKEN/deb/deb/ubuntu any-version main" >> /etc/apt/sources.list
         apt-get -y clean
         apt-get -y update
         r=$?
@@ -361,8 +361,8 @@ function install_packages_from_repo()
     sles)
         # The two lines are necessary to import gpgkey, and don't try to delete them.
         zypper clean -a
-        zypper --gpg-auto-import-keys refresh
-        zypper --non-interactive install $packages
+        zypper --no-gpg-checks refresh
+        sudo zypper --non-interactive --no-gpg-checks install $packages
         r=$?
         if [ $r -ne 0 ];then
             echo "$CENTRIFY_MSG_PREX: zypper install packages[$packages] failed!" 

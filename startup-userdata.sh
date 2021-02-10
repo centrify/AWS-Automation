@@ -96,9 +96,17 @@ export CENTRIFYCC_CENROLL_ADDITIONAL_OPTIONS=''
 
 
 ####### Set Configuration Parameters for CentrifyDC ###########
-# The user name and password required to access Centrify repository.  
-# Must be specified if DEPLOY_CENTRIFYDC is yes.
-export CENTRIFY_REPO_CREDENTIAL=
+# To deploy on Linux, CentOS, RHEL platforms, token must be specified  
+# Specified if DEPLOY_CENTRIFYDC is yes.
+export CENTRIFYDC_REDHAT_TOKEN=''
+
+# To deploy on SUSE Platform, token must be specified
+# Specified if DEPLOY_CENTRIFYDC is yes.
+export CENTRIFYDC_SUSE_TOKEN=''
+
+# To deploy on Ubuntu Platform, token must be specified
+# Specified if DEPLOY_CENTRIFYDC is yes.
+export CENTRIFYDC_UBUNTU_TOKEN=''
 
 # This specifies whether the agent will join to on-premise Active Directory directly. 
 # Allowed value: yes/no (default: yes)

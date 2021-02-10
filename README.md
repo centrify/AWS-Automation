@@ -31,10 +31,7 @@ The following platforms are supported:
   - An EC2 instance that has Centrify Infrastructure Services installed and joined to your Active Directory.
   - An account in the Centrify Support website 
 	 (http://www.centrify.com/support).   Follow the instruction in 
-	 https://www.centrify.com/support/customer-support-portal/repos to generate the repo key. Use the string
-	 before @repo.centrify.com to set up the parameter CENTRIFY_REPO_CREDENTIAL.  For example, if the repo key 
-	 is 1111111122222233333333333333344444555555:777888880000099999991234567890abcdefghij@repo.centrify.com, set
-	 CENTRIFY_REPO_CREDENIIAL=1111111122222233333333333333344444555555:777888880000099999991234567890abcdefghij
+	 https://www.centrify.com/support/customer-support-portal/repos to generate the repo key.
 
 # Configuration parameters
 You can specify the AWS deployment configuration in the `User Data` of the AWS instance.   You need to download the file 
@@ -69,7 +66,9 @@ The following parameters are for joining to Active Directory using the Centrify 
 | Parameter | Description | Optional | Example |
 | --- | --- | --- | --- | 
 | DEPLOY_CENTRIFYDC | Install Centrify Infrastructure Services agent | no | yes |
-| CENTRIFY_REPO_CREDENTIAL | Credential required to access Centrify Repo | no | *a long string* |
+| CENTRIFYDC_REDHAT_TOKEN | Token to access Centrify Repo | no, if deployed on Centos, Amazon Linux or RHEL platforms; yes, for other platforms | *a long string* |
+| CENTRIFYDC_SUSE_TOKEN | Token to access Centrify Repo | no, if deployed on SUSE platform; yes, for other| *a long string* |
+| CENTRIFYDC_UBUNTU_TOKEN | Token to access Centrify Repo | no, if deployed on Ubuntu platform; yes, for other| *a long string* |
 | CENTRIFYDC_JOIN_TO_AD | Whether to join to Active Directory | no | yes |
 | CENTRIFYDC_ZONE_NAME | Name of zone to join to | no | *my_zone* |
 | CENTRIFYDC_HOSTNAME_FORMAT | How to generate host name to use in Active Directory.  Valid values are PRIVATE_IP, INSTANCE_ID. See note below | no | PRIVATE_IP |
