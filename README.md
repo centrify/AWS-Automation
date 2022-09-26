@@ -1,5 +1,11 @@
 # Introduction
 
+# PUBLIC ARCHIVE
+
+> ***NOTE***
+> This repo is archived.
+> This is still available under the licensing terms, but is not being actively developed or updated any further. Please see [DelineaXPM](https://github.com/DelineaXPM) for active projects.
+
 This is the README file for using sample orchestration scripts to automatically
 enroll Linux-based cloud instances to Centrify Identity Platform or
 to automatically join the instance to Active Directory.
